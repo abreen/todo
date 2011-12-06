@@ -1,0 +1,156 @@
+#! /bin/bash
+
+# todo - A tool to help you do
+
+DONT_KNOW="Don't know what that means."
+NOTHING="Nothing to do."
+NOTHING_MORE="Nothing more to remove."
+ADDED="Added."
+ACTION_ARG=$1
+TOKEN_ARG=$2
+FILE_LOC=~/todo
+
+function catwithnum() {
+  awk '{print FNR ". " $0}' $FILE_LOC
+  return 0
+}
+
+function esgibt() {
+  if [ "$(cat $FILE_LOC)" != "" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function checkargs() {
+  if [ "$TOKEN_ARG" != "" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+function checkread() {
+  if [ -f $FILE_LOC ] && [ -r $FILE_LOC ]; then
+    return 0
+  else
+    if [ ! -f $FILE_LOC ]; then
+      touch $FILE_LOC
+      if [ "$?" = "0" ]; then
+        echo "Created empty todo list file $FILE_LOC."
+        return 0
+      else
+        echo "Could not create empty todo list file $FILE_LOC."
+        return 1
+      fi
+    fi
+    if [ ! -r $FILE_LOC ]; then
+      echo "~/todo is unreadable."
+      return 1
+    fi
+  fi
+}
+
+function help() {
+  echo "todo + ..."
+  echo -e "list\tadd\tremove\thelp\tabout"
+}
+
+function longhelp() {
+  echo "todo - A tool to help you do"
+  echo -e "todo\t[action]\t[argument]"
+  echo -e "todo\tlist\t\t\t\tlists your todos"
+  echo -e "todo\tadd\t\t(string)\tadds a todo with title"
+  echo -e "todo\tremove\t\t(num)\t\tremove a certain todo"
+  echo -e "todo\tabout\t\t\t\tdisplay credit and version information"
+  echo -e "todo\thelp\t\t\t\tdisplay this screen"
+}
+
+function about() {
+  echo "todo - A tool to help you do"
+  echo "by Alexander Breen (abreen@bu.edu)"
+  echo "v0.1 (Dec 5 2011)"
+}
+
+function list() {
+  checkread
+  if [ "$?" = "0" ]; then
+    esgibt
+    if [ "$?" = "0" ]; then
+      catwithnum
+      exit 0
+    else
+      echo $NOTHING
+      exit 0
+    fi
+  else
+    exit 1
+  fi
+}
+
+function add() {
+  checkargs
+  if [ "$?" = "0" ]; then
+    # Try to add on to the file
+    LINE_NUM=$(cat $FILE_LOC | awk 'END{print NR}')
+    echo "$TOKEN_ARG" >> $FILE_LOC
+    echo $ADDED
+    catwithnum | tail -r -n 1
+    exit 0
+  else
+    # No token argument
+    echo "Todos must have titles."
+    echo "todo + add + \"Todo text\""
+    exit 1
+  fi
+}
+
+function remove() {
+  esgibt
+  if [ "$?" = "1" ]; then
+    echo $NOTHING_MORE
+    exit 1
+  fi
+  checkargs
+  if [ "$?" = "0" ]; then
+    # Given a token
+    KILL_LINE=$((TOKEN_ARG))
+    sed "$KILL_LINE"d"" $FILE_LOC > "$FILE_LOC"~
+    cat "$FILE_LOC"~ > $FILE_LOC
+    catwithnum
+    exit 0
+  else
+    # No token argument
+    echo "Which item shall I remove?"
+    exit 1
+  fi
+}
+
+case "$1" in
+'')
+help
+;;
+'help')
+longhelp
+;;
+'--help')
+longhelp
+;;
+'about')
+about
+;;
+'list')
+list
+;;
+'add')
+add
+;;
+'remove')
+remove
+;;
+*)
+echo $DONT_KNOW
+help
+;;
+esac
