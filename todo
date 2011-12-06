@@ -92,7 +92,7 @@ function about() {
 function list() {
   checkread
   if [ "$?" = "0" ]; then
-    esgibt
+    nonempty
     if [ "$?" = "0" ]; then
       catwithnum
       exit 0
