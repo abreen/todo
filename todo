@@ -1,21 +1,32 @@
 #! /bin/bash
 
 # todo - A tool to help you do
+# by Alexander Breen
+# alexanderbreen.com
+# Released under GPLv3
 
+# Error/info strings
 DONT_KNOW="Don't know what that means."
 NOTHING="Nothing to do."
 NOTHING_MORE="Nothing more to remove."
 ADDED="Added."
+
+# Globals
 ACTION_ARG=$1
 TOKEN_ARG=$2
+
+# You're allowed to change these
 FILE_LOC=~/todo
 
+
+# Print all lines of the todo file with line numbers
 function catwithnum() {
   awk '{print FNR ". " $0}' $FILE_LOC
   return 0
 }
 
-function esgibt() {
+# Returns 0 if non-empty, 1 if empty
+function nonempty() {
   if [ "$(cat $FILE_LOC)" != "" ]; then
     return 0
   else
@@ -23,6 +34,8 @@ function esgibt() {
   fi
 }
 
+# Returns 0 if an arbitrary argument was supplied, and
+# 1 otherwise
 function checkargs() {
   if [ "$TOKEN_ARG" != "" ]; then
     return 0
@@ -31,6 +44,8 @@ function checkargs() {
   fi
 }
 
+# Returns 0 if the todo file exists and is readable; makes
+# an effort to create the file if it does not exist
 function checkread() {
   if [ -f $FILE_LOC ] && [ -r $FILE_LOC ]; then
     return 0
@@ -46,7 +61,7 @@ function checkread() {
       fi
     fi
     if [ ! -r $FILE_LOC ]; then
-      echo "~/todo is unreadable."
+      echo "$FILE_LOC is unreadable."
       return 1
     fi
   fi
@@ -73,6 +88,7 @@ function about() {
   echo "v0.1 (Dec 5 2011)"
 }
 
+# Performs the standard "todo list" function
 function list() {
   checkread
   if [ "$?" = "0" ]; then
@@ -89,35 +105,48 @@ function list() {
   fi
 }
 
+# Tries to append a new todo to the todo file
 function add() {
+  # Was an arbitrary argument supplied?
   checkargs
   if [ "$?" = "0" ]; then
-    # Try to add on to the file
-    LINE_NUM=$(cat $FILE_LOC | awk 'END{print NR}')
+    # Append the argument to the end of the file
     echo "$TOKEN_ARG" >> $FILE_LOC
+    # Tell the user we've added the todo
     echo $ADDED
+    # ...also include a preview of that todo item
     catwithnum | tail -r -n 1
     exit 0
   else
     # No token argument
     echo "Todos must have titles."
-    echo "todo + add + \"Todo text\""
+    echo "todo + add + \"Remember the milk\""
     exit 1
   fi
 }
 
+# Attempts to remove the todo at a specified line
 function remove() {
-  esgibt
+  # If the file is empty, we should break early
+  nonempty
   if [ "$?" = "1" ]; then
     echo $NOTHING_MORE
     exit 1
   fi
+  
+  # Check to see if we were given an argument
   checkargs
   if [ "$?" = "0" ]; then
-    # Given a token
+    # Should be doing error-checking here
+
+    # Perhaps also a confirm step, at which we
+    # echo the chosen todo back to the user to be
+    # sure they want to remove it
+
     KILL_LINE=$((TOKEN_ARG))
     sed "$KILL_LINE"d"" $FILE_LOC > "$FILE_LOC"~
-    cat "$FILE_LOC"~ > $FILE_LOC
+    # Using a temporary file to hold the results
+    cat "$FILE_LOC"~ > $FILE_LOC   # Replacing
     catwithnum
     exit 0
   else
@@ -126,6 +155,9 @@ function remove() {
     exit 1
   fi
 }
+
+# There's a better way to do this, but my 2 AM brain
+# doesn't want to realize
 
 case "$1" in
 '')
