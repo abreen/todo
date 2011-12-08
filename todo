@@ -1,33 +1,58 @@
 #! /bin/bash
 
-# todo - A tool to help you do
-# by Alexander Breen
-# alexanderbreen.com
-# Released under GPLv3
+## todo - A tool to help you do
+## Copyright 2011 Alexander Breen
+## alexanderbreen.com
 
-# Error/info strings
-DONT_KNOW="Don't know what that means."
-NOTHING="Nothing to do."
-NOTHING_MORE="Nothing more to remove."
-ADDED="Added."
-
-# Globals
-ACTION_ARG=$1
-TOKEN_ARG=$2
+## This program is free software: you can redistribute it and/or modify
+## it under the terms of the GNU General Public License as published by
+## the Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+## 
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+## 
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # You're allowed to change these
-FILE_LOC=~/todo
+file_location=~/todo   # Location of your todo file
 
+# Unless you're adventurous, don't change anything below this
+
+# Error/info strings
+es_dont_know="Don't know what that means."
+es_nothing_todo="Nothing to do."
+es_added="Added."
+es_sure="Are you sure? (Y/n)"
+es_removed="Removed."
+es_cancelled="Cancelled."
+
+# Globals
+action=$1
+token="$2"
+
+# Kill the script if something goes wrong
+set -e
 
 # Print all lines of the todo file with line numbers
 function catwithnum() {
-  awk '{print FNR ". " $0}' $FILE_LOC
-  return 0
+  if [ "$1" = "all" ]; then
+    awk '{print FNR ". " $0}' $file_location  
+    return 0
+  else
+    # Catch long todo lists
+    awk '{ if (NR < 11) { print FNR ". " $0 } }
+         END { if (NR > 10) { print "10 of " NR " todos printed. Use \"todo list all\" to see all " NR "." } }' $file_location
+    return 0
+  fi
 }
 
 # Returns 0 if non-empty, 1 if empty
-function nonempty() {
-  if [ "$(cat $FILE_LOC)" != "" ]; then
+function empty() {
+  if [ "$(cat $file_location)" = "" ]; then
     return 0
   else
     return 1
@@ -36,8 +61,8 @@ function nonempty() {
 
 # Returns 0 if an arbitrary argument was supplied, and
 # 1 otherwise
-function checkargs() {
-  if [ "$TOKEN_ARG" != "" ]; then
+function token() {
+  if [ "$token" != "" ]; then
     return 0
   else
     return 1
@@ -47,21 +72,21 @@ function checkargs() {
 # Returns 0 if the todo file exists and is readable; makes
 # an effort to create the file if it does not exist
 function checkread() {
-  if [ -f $FILE_LOC ] && [ -r $FILE_LOC ]; then
+  if [ -f $file_location ] && [ -r $file_location ]; then
     return 0
   else
-    if [ ! -f $FILE_LOC ]; then
-      touch $FILE_LOC
+    if [ ! -f $file_location ]; then
+      touch $file_location
       if [ "$?" = "0" ]; then
-        echo "Created empty todo list file $FILE_LOC."
+        echo "Created empty todo list file $file_location."
         return 0
       else
-        echo "Could not create empty todo list file $FILE_LOC."
+        echo "Could not create empty todo list file $file_location."
         return 1
       fi
     fi
-    if [ ! -r $FILE_LOC ]; then
-      echo "$FILE_LOC is unreadable."
+    if [ ! -r $file_location ]; then
+      echo "Can't continue: $file_location is unreadable."
       return 1
     fi
   fi
@@ -85,19 +110,19 @@ function longhelp() {
 function about() {
   echo "todo - A tool to help you do"
   echo "by Alexander Breen (abreen@bu.edu)"
-  echo "v0.1 (Dec 5 2011)"
+  echo "v0.2 (Dec 7 2011)"
 }
 
 # Performs the standard "todo list" function
 function list() {
-  checkread
-  if [ "$?" = "0" ]; then
-    nonempty
-    if [ "$?" = "0" ]; then
-      catwithnum
+  # Can we read the todo list file?
+  if checkread; then
+    if ! empty; then
+      # catwithnum() handles abnormally long lists
+      catwithnum $token
       exit 0
     else
-      echo $NOTHING
+      echo $es_nothing_todo
       exit 0
     fi
   else
@@ -108,14 +133,13 @@ function list() {
 # Tries to append a new todo to the todo file
 function add() {
   # Was an arbitrary argument supplied?
-  checkargs
-  if [ "$?" = "0" ]; then
+  if token; then
     # Append the argument to the end of the file
-    echo "$TOKEN_ARG" >> $FILE_LOC
+    echo "$token" >> $file_location
     # Tell the user we've added the todo
-    echo $ADDED
+    echo $es_added
     # ...also include a preview of that todo item
-    catwithnum | tail -r -n 1
+    catwithnum all | tail -r -n 1
     exit 0
   else
     # No token argument
@@ -128,27 +152,31 @@ function add() {
 # Attempts to remove the todo at a specified line
 function remove() {
   # If the file is empty, we should break early
-  nonempty
-  if [ "$?" = "1" ]; then
-    echo $NOTHING_MORE
+  if empty; then
+    echo "Can't remove something from nothing."
     exit 1
   fi
   
   # Check to see if we were given an argument
-  checkargs
-  if [ "$?" = "0" ]; then
+  if token; then
     # Should be doing error-checking here
 
-    # Perhaps also a confirm step, at which we
-    # echo the chosen todo back to the user to be
-    # sure they want to remove it
-
-    KILL_LINE=$((TOKEN_ARG))
-    sed "$KILL_LINE"d"" $FILE_LOC > "$FILE_LOC"~
-    # Using a temporary file to hold the results
-    cat "$FILE_LOC"~ > $FILE_LOC   # Replacing
-    catwithnum
-    exit 0
+    catwithnum all | head -n $token | tail -n 1
+    echo -n "$es_sure "
+    read response
+    
+    if [ "$response" == "Y" ]; then
+      kill_line=$((token))
+      sed "$kill_line"d"" $file_location > "$file_location"~
+      # Using a temporary file to hold the results
+      cat "$file_location"~ > $file_location   # Replacing
+      rm "$file_location"~   # Delete temporary file
+      echo $es_removed
+      exit 0
+    else
+      echo $es_cancelled
+      exit 0
+    fi
   else
     # No token argument
     echo "Which item shall I remove?"
@@ -159,30 +187,15 @@ function remove() {
 # There's a better way to do this, but my 2 AM brain
 # doesn't want to realize
 
-case "$1" in
-'')
-help
-;;
-'help')
-longhelp
-;;
-'--help')
-longhelp
-;;
-'about')
-about
-;;
-'list')
-list
-;;
-'add')
-add
-;;
-'remove')
-remove
-;;
-*)
-echo $DONT_KNOW
-help
-;;
+case "$action" in
+'') help ;;
+'help') longhelp ;;
+'--help') longhelp ;;
+'about') about ;;
+'list') list ;;
+'add') add ;;
+'remove') remove ;;
+*) echo $es_dont_know
+   help
+   ;;
 esac
