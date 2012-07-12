@@ -1,7 +1,7 @@
 #! /bin/bash
 
 ## todo - A tool to help you do
-## Copyright 2011 Alexander Breen
+## Copyright 2011-2012 Alexander Breen
 ## alexanderbreen.com
 
 ## This program is free software: you can redistribute it and/or modify
@@ -23,8 +23,8 @@ file_location=~/todo   # Location of your todo file
 # Unless you're adventurous, don't change anything below this
 
 # Error/info strings
-es_dont_know="Don't know what that means."
-es_nothing_todo="Nothing to do."
+es_dont_know="Sorry, I'm not sure what you mean."
+es_nothing_todo="Nothing to do. Hooray!"
 es_added="Added."
 es_sure="Are you sure? (Y/n)"
 es_removed="Removed."
@@ -110,7 +110,7 @@ function longhelp() {
 function about() {
   echo "todo - A tool to help you do"
   echo "by Alexander Breen (abreen@bu.edu)"
-  echo "v0.2 (Dec 7 2011)"
+  echo "v0.3 (Jul 12 2012)"
 }
 
 # Performs the standard "todo list" function
