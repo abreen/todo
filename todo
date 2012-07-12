@@ -139,7 +139,7 @@ function add() {
     # Tell the user we've added the todo
     echo $es_added
     # ...also include a preview of that todo item
-    catwithnum all | tail -r -n 1
+    catwithnum all | tail -n 1
     exit 0
   else
     # No token argument
