@@ -18,7 +18,8 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # You're allowed to change these
-file_location=~/todo   # Location of your todo file
+file_location=~/todo-test    # Location of your todo file
+max_length=10                # Maximum length of list; set this to 0 for no pagination
 
 # Unless you're adventurous, don't change anything below this
 
@@ -29,13 +30,20 @@ es_added="Added."
 es_sure="Are you sure? (Y/n)"
 es_removed="Removed."
 es_cancelled="Cancelled."
+es_underflow="Can't remove something from nothing."
+es_created="Created empty todo list file "
+es_creation_failed="Could not create empty todo list file "
+es_permissions_ask="Do you have the proper permissions?"
+es_not_readable=" is unreadable."
+es_specify="Which one shall I remove?"
+es_need_title="Todos must not be empty."
 
 # Globals
 action=$1
 token="$2"
 
 # Kill the script if something goes wrong
-set -e
+#set -e
 
 # Print all lines of the todo file with line numbers
 function catwithnum() {
@@ -43,10 +51,14 @@ function catwithnum() {
     awk '{print FNR ". " $0}' $file_location  
     return 0
   else
-    # Catch long todo lists
-    awk '{ if (NR < 11) { print FNR ". " $0 } }
-         END { if (NR > 10) { print "10 of " NR " todos printed. Use \"todo list all\" to see all " NR "." } }' $file_location
-    return 0
+    if [ "$max_length" = 0 ]; then
+      catwithnum all
+      return 0
+    else
+      awk '{ if (NR <= '$max_length') { print FNR ". " $0 } }
+         END { if (NR > '$max_length') { print "'$max_length' of " NR " todos printed. Use \"todo list all\" to see all " NR "." } }' $file_location
+      return 0
+    fi
   fi
 }
 
@@ -76,17 +88,19 @@ function checkread() {
     return 0
   else
     if [ ! -f $file_location ]; then
-      touch $file_location
+      touch $file_location > /dev/null 2>&1
       if [ "$?" = "0" ]; then
-        echo "Created empty todo list file $file_location."
+        echo "$es_created$file_location."
         return 0
       else
-        echo "Could not create empty todo list file $file_location."
+        echo "todo: $es_creation_failed$file_location." >&2
+        echo $es_permissions_ask
         return 1
       fi
     fi
     if [ ! -r $file_location ]; then
-      echo "Can't continue: $file_location is unreadable."
+      echo "todo: $file_location$es_not_readable" >&2
+      echo $es_permissions_ask
       return 1
     fi
   fi
@@ -99,8 +113,9 @@ function help() {
 
 function longhelp() {
   echo "todo - A tool to help you do"
-  echo -e "todo\t[action]\t[argument]"
+  echo -e "\t[action]\t[argument]"
   echo -e "todo\tlist\t\t\t\tlists your todos"
+  echo -e "todo\tlist\t\tall\t\tlists all todos"
   echo -e "todo\tadd\t\t(string)\tadds a todo with title"
   echo -e "todo\tremove\t\t(num)\t\tremove a certain todo"
   echo -e "todo\tabout\t\t\t\tdisplay credit and version information"
@@ -110,7 +125,7 @@ function longhelp() {
 function about() {
   echo "todo - A tool to help you do"
   echo "by Alexander Breen (abreen@bu.edu)"
-  echo "v0.3 (Jul 12 2012)"
+  echo "v0.4 (Aug 6 2012)"
 }
 
 # Performs the standard "todo list" function
@@ -143,7 +158,7 @@ function add() {
     exit 0
   else
     # No token argument
-    echo "Todos must have titles."
+    echo $es_need_title
     echo "todo + add + \"Remember the milk\""
     exit 1
   fi
@@ -153,7 +168,7 @@ function add() {
 function remove() {
   # If the file is empty, we should break early
   if empty; then
-    echo "Can't remove something from nothing."
+    echo "todo: $es_underflow" >&2
     exit 1
   fi
   
@@ -179,23 +194,21 @@ function remove() {
     fi
   else
     # No token argument
-    echo "Which item shall I remove?"
+    echo $es_specify
     exit 1
   fi
 }
-
-# There's a better way to do this, but my 2 AM brain
-# doesn't want to realize
 
 case "$action" in
 '') help ;;
 'help') longhelp ;;
 '--help') longhelp ;;
+'-h') longhelp ;;
 'about') about ;;
 'list') list ;;
 'add') add ;;
 'remove') remove ;;
-*) echo $es_dont_know
+*) echo "todo: $es_dont_know" >&2
    help
    ;;
 esac

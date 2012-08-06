@@ -9,7 +9,13 @@
 
 The file managed by `todo` is as simple as it gets. If you outgrow `todo`, it can be easily transported to other GTD applications. If you don't like `~/todo` as a location, you can change one variable in `todo`'s source code.
 
-`todo` is my first foray into shell scripting. I hope you can find it useful enough to contribute some time to the probject. It is released under the [GNU General Public License](http://www.gnu.org/copyleft/gpl.html).
+`todo` was inspired by and adheres to Douglas McIlroy's Unix philosophy:
+
+*  Write programs that do one thing and do it well.
+*  Write programs to work together.
+*  Write programs to handle text streams, because that is a universal interface.
+
+`todo` is my first foray into shell scripting. I hope you find it useful. It is released under the [GNU General Public License](http://www.gnu.org/copyleft/gpl.html).
 
 ## Installation
 Probably the best way to install `todo` is to create a symbolic link to it from
