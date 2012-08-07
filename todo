@@ -18,7 +18,7 @@
 ## along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # You're allowed to change these
-file_location=~/todo-test    # Location of your todo file
+file_location=~/todo         # Location of your todo file
 max_length=10                # Maximum length of list; set this to 0 for no pagination
 
 # Unless you're adventurous, don't change anything below this
