@@ -24,26 +24,40 @@ max_length=10                # Maximum length of list; set this to 0 for no pagi
 # Unless you're adventurous, don't change anything below this
 
 # Error/info strings
-es_dont_know="Sorry, I'm not sure what you mean."
+es_dont_know="Not sure what you mean"
 es_nothing_todo="Nothing to do. Hooray!"
-es_added="Added."
 es_sure="Are you sure? (Y/n)"
+es_added="Added."
+es_amended="Amended."
 es_removed="Removed."
 es_cancelled="Cancelled."
-es_underflow="Can't remove something from nothing."
+es_underflow="The todo list file is already empty"
 es_created="Created empty todo list file "
 es_creation_failed="Could not create empty todo list file "
 es_permissions_ask="Do you have the proper permissions?"
-es_not_readable=" is unreadable."
-es_specify="Which one shall I remove?"
-es_need_title="Todos must not be empty."
+es_not_readable=" is unreadable"
+es_specify="Specify a todo to act on"
+es_need_title="Todos must not be empty"
+es_argument_expected="Expected an action but got none"
+es_nonexistent="That todo doesn't exist"
+es_amending="Will be amended to:"
+es_amend_failed="Failed editing todo list file"
 
 # Globals
 action=$1
 token="$2"
 
 # Kill the script if something goes wrong
-#set -e
+set -e
+
+# Initialize the script, check for dependencies
+function init() {
+  # We need sed
+  if [ ! $(which sed) ]; then
+    echo "todo: You must have 'sed' installed" >&2
+    exit 1
+  fi
+}
 
 # Print all lines of the todo file with line numbers
 function catwithnum() {
@@ -90,10 +104,10 @@ function checkread() {
     if [ ! -f $file_location ]; then
       touch $file_location > /dev/null 2>&1
       if [ "$?" = "0" ]; then
-        echo "$es_created$file_location."
+        echo "$es_created$file_location"
         return 0
       else
-        echo "todo: $es_creation_failed$file_location." >&2
+        echo "todo: $es_creation_failed$file_location" >&2
         echo $es_permissions_ask
         return 1
       fi
@@ -107,25 +121,23 @@ function checkread() {
 }
 
 function help() {
-  echo "todo + ..."
-  echo -e "list\tadd\tremove\thelp\tabout"
+  echo -e "Usage: \033[1mtodo\033[22m \033[1mlist\033[22m [\033[1mall\033[22m] | \033[1madd\033[22m \033[4mstring\033[24m | \033[1mremove\033[22m \033[4m#\033[24m | \033[1mamend\033[22m \033[4m#\033[24m | \033[1mhelp\033[22m | \033[1mabout\033[22m" >&2
 }
 
 function longhelp() {
-  echo "todo - A tool to help you do"
-  echo -e "\t[action]\t[argument]"
-  echo -e "todo\tlist\t\t\t\tlists your todos"
-  echo -e "todo\tlist\t\tall\t\tlists all todos"
-  echo -e "todo\tadd\t\t(string)\tadds a todo with title"
-  echo -e "todo\tremove\t\t(num)\t\tremove a certain todo"
-  echo -e "todo\tabout\t\t\t\tdisplay credit and version information"
-  echo -e "todo\thelp\t\t\t\tdisplay this screen"
+  echo -e "\033[1mtodo\033[22m +"
+  echo -e "  \033[1mlist\033[22m [\033[1mall\033[22m]\tList your todos"
+  echo -e "  \033[1madd\033[22m \033[4mstring\033[24m\tAdd a todo" 
+  echo -e "  \033[1mremove\033[22m \033[4m#\033[24m\tRemove a todo" 
+  echo -e "  \033[1mamend\033[22m \033[4m#\033[24m\tAmend an exisiting todo" 
+  echo -e "  \033[1mhelp\033[22m\t\tPrint this screen" 
+  echo -e "  \033[1mabout\033[22m\t\tGet to know the author" 
 }
 
 function about() {
   echo "todo - A tool to help you do"
   echo "by Alexander Breen (abreen@bu.edu)"
-  echo "v0.4 (Aug 6 2012)"
+  echo "v1.0 (Aug 8 2012)"
 }
 
 # Performs the standard "todo list" function
@@ -158,9 +170,59 @@ function add() {
     exit 0
   else
     # No token argument
-    echo $es_need_title
-    echo "todo + add + \"Remember the milk\""
+    echo "todo: $es_need_title" >&2
+    help
     exit 1
+  fi
+}
+
+# Checks if a specified todo really exists
+function check_existence() {
+  len=$(cat "$file_location" | wc -l)
+  if [ $1 -gt $len ]; then
+    echo "todo: $es_nonexistent" >&2
+    exit 1
+  else
+    if [ $1 -lt 1 ]; then
+      echo "todo: $es_nonexistent" >&2
+      exit 1
+    fi
+  fi
+}
+
+# Unceremoniously kills a line from the todo file
+function kill_line() {
+  if [ -z $1 ]; then
+    return 1
+  fi
+  
+  sed -i "$1""d" $file_location
+}
+
+# Attempts to amend an existing todo
+function amend() {
+  if token; then
+    check_existence $token
+    
+    # Ask to amend the todo
+    catwithnum | head -n "$token" | tail -n 1
+    echo "$es_amending"
+    echo -n "$token. "
+    read response
+    
+    sed -i """$token"c\\"$response""" $file_location
+    
+    if [ "$?" = 0 ]; then
+      echo "$es_amended"
+      exit 0
+    else
+      echo "todo: $es_amend_failed" >&2
+      exit 1
+    fi
+    
+  else
+    echo "todo: $es_specify" >&2
+    help 
   fi
 }
 
@@ -174,18 +236,14 @@ function remove() {
   
   # Check to see if we were given an argument
   if token; then
-    # Should be doing error-checking here
-
+    check_existence $token
+  
     catwithnum all | head -n $token | tail -n 1
     echo -n "$es_sure "
     read response
     
     if [ "$response" == "Y" ]; then
-      kill_line=$((token))
-      sed "$kill_line"d"" $file_location > "$file_location"~
-      # Using a temporary file to hold the results
-      cat "$file_location"~ > $file_location   # Replacing
-      rm "$file_location"~   # Delete temporary file
+      kill_line $token
       echo $es_removed
       exit 0
     else
@@ -194,19 +252,23 @@ function remove() {
     fi
   else
     # No token argument
-    echo $es_specify
+    echo "todo: $es_specify" >&2
+    help
     exit 1
   fi
 }
 
+init
 case "$action" in
-'') help ;;
+'') echo "todo: $es_argument_expected" >&2
+    help ;;
 'help') longhelp ;;
 '--help') longhelp ;;
 '-h') longhelp ;;
 'about') about ;;
 'list') list ;;
 'add') add ;;
+'amend') amend ;;
 'remove') remove ;;
 *) echo "todo: $es_dont_know" >&2
    help

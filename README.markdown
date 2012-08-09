@@ -1,11 +1,10 @@
 # todo - A tool to help you do
 `todo` is a basic shell script for bash that manages a tiny file (by default, located at `~/todo`) with your important tasks. Todos are manipulated via the command line through simple, easy-to-remember arguments.
 
-> `todo list` lists all your todos in a numbered list
-
-> `todo add ...` adds a todo with a specified title
-
-> `todo remove #` removes a specified todo by its number
+> `todo list` lists all of your todos
+> `todo add <string>` adds a new todo
+> `todo amend <#>` amends an existing todo
+> `todo remove <#>` removes the specified todo
 
 The file managed by `todo` is as simple as it gets. If you outgrow `todo`, it can be easily transported to other GTD applications. If you don't like `~/todo` as a location, you can change one variable in `todo`'s source code.
 
