@@ -5,7 +5,7 @@
 
 # You're allowed to change these
 FILE_LOCATION=~/todo         # Location of your todo file
-MAX_LENGTH=4                # Max. todos to display at once; set this to 0
+MAX_LENGTH=10                # Max. todos to display at once; set this to 0
                              # for no pagination
 
 # Unless you're adventurous, don't change anything below this
@@ -46,16 +46,16 @@ function create_file() {
   if [ ! -f "$FILE_LOCATION" ]; then
     touch "$FILE_LOCATION" > /dev/null 2>&1
     if [ "$?" = "0" ]; then
-      echo "Created empty todo list file $FILE_LOCATION."
+      echo "Created empty todo list file '$FILE_LOCATION'."
       return 0
     else
-      echo "$0: Could not create empty todo list file $FILE_LOCATION." >&2
+      echo "$0: Could not create empty todo list file '$FILE_LOCATION'." >&2
       return 1
     fi
   fi
 
   if [ ! -r "$FILE_LOCATION" ]; then
-    echo "$0: $FILE_LOCATION is not readable." >&2
+    echo "$0: '$FILE_LOCATION' is not readable." >&2
     return 1
   fi
 }

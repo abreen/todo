@@ -6,9 +6,8 @@ simple, easy-to-remember commands.
 
 1. `todo` or `todo list` lists all of your todos,
 2. `todo add` adds a new todo,
-3. `todo amend` amends an existing todo,
-5. `todo reschedule` reschedules an existing todo, and
-6. `todo remove` removes the specified todo.
+3. `todo amend` amends an existing todo, and
+4. `todo remove` removes the specified todo.
 
 The file managed by `todo` is as simple as it gets. Each todo is written 
 to a new line. `todo` merely adds and removes lines to this file. If you
