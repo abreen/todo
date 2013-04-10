@@ -61,7 +61,7 @@ function create_file() {
 }
 
 function usage() {
-  echo -e "Usage: \033[1m$0\033[22m \033[1mlist\033[22m [\033[1mall\033[22m] | \033[1madd\033[22m \033[4mstring\033[24m | \033[1mremove\033[22m \033[4m#\033[24m | \033[1mamend\033[22m \033[4m#\033[24m | \033[1mhelp\033[22m | \033[1mabout\033[22m" >&2
+  echo -e "Usage: \033[1mtodo\033[22m \033[1mlist\033[22m [\033[1mall\033[22m] | \033[1madd\033[22m \033[4mstring\033[24m | \033[1mremove\033[22m \033[4m#\033[24m | \033[1mamend\033[22m \033[4m#\033[24m | \033[1mhelp\033[22m | \033[1mabout\033[22m" >&2
 }
 
 function help() {
